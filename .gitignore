@@ -1,0 +1,27 @@
+# Build
+.build/
+
+# App bundle (compiled binary)
+Trim.app/
+
+# Xcode
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+
+# macOS
+.DS_Store
+.Rhistory
+
+# Claude
+.claude/
+
+# Internal docs
+CLAUDE.md
+DECISIONS.md
+DESIGN.md
+PRODUCT.md
+V3_ONBOARDING.md
+V2_FACEOFF.md
+CHANGES-*.md
+*.docx
