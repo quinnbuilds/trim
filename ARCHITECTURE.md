@@ -28,11 +28,10 @@ Trim/
 │   │   │   └── SessionSetupView.swift   # Entry screen: session mode selection
 │   │   ├── Triage/
 │   │   │   ├── TriageView.swift         # Container for swipe session
-│   │   │   ├── CardStackView.swift      # Renders stack of cards with depth
+│   │   │   ├── CardStackView.swift      # Renders stack of cards with depth; drag/tilt/fly-off gesture logic
 │   │   │   ├── AssetCardView.swift      # Individual card: photo + shadow + corners
 │   │   │   ├── SwipeDirectionOverlay.swift  # Color tint + label overlay
-│   │   │   ├── CardGestureModifier.swift    # Drag, tilt, fly-off animation logic
-│   │   │   └── FullScreenOverlay.swift      # Full-screen photo viewing mode
+│   │   │   └── FullScreenOverlay.swift      # Full-screen photo/video viewing mode
 │   │   ├── Review/
 │   │   │   ├── ReviewView.swift         # Grid of items marked Trim
 │   │   │   └── ReviewGridItem.swift     # Individual item in review grid

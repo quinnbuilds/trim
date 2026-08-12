@@ -74,6 +74,8 @@ class AppSettings {
     // Lifetime stats
     var totalFilesDeleted: Int = 0
     var totalBytesFreed: Int64 = 0
+    // Anchor for "Continue trimming": creationDate of the oldest photo in the last completed session.
+    var continueFromDate: Date? = nil
 
     private let defaults = UserDefaults.standard
 
@@ -107,6 +109,8 @@ class AppSettings {
         }
         totalFilesDeleted = defaults.integer(forKey: "totalFilesDeleted")
         totalBytesFreed = Int64(defaults.double(forKey: "totalBytesFreed"))
+        let cf = defaults.double(forKey: "continueFromDate")
+        continueFromDate = cf > 0 ? Date(timeIntervalSince1970: cf) : nil
     }
 
     func save() {
@@ -120,6 +124,12 @@ class AppSettings {
         }
         defaults.set(totalFilesDeleted, forKey: "totalFilesDeleted")
         defaults.set(Double(totalBytesFreed), forKey: "totalBytesFreed")
+        defaults.set(continueFromDate?.timeIntervalSince1970 ?? 0, forKey: "continueFromDate")
+    }
+
+    func setContinueFrom(_ date: Date?) {
+        continueFromDate = date
+        save()
     }
 
     func markKept(identifier: String) {

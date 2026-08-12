@@ -8,6 +8,7 @@ struct TriageView: View {
     let settings: AppSettings
     let onComplete: () -> Void
     let onBack: () -> Void
+    let onRequestMore: () -> Void
 
     @State private var isFullScreen: Bool = false
     @State private var showLastPhoto: Bool = false
@@ -48,6 +49,12 @@ struct TriageView: View {
             // "Last photo!" banner
             if showLastPhoto && !isFullScreen {
                 lastPhotoBanner
+            }
+
+            // Continuation boundary — capped session ran out but more library remains
+            if session.pendingContinuation && !isFullScreen {
+                continuationPrompt
+                    .zIndex(50)
             }
 
             // Full-screen overlay
@@ -133,6 +140,32 @@ struct TriageView: View {
         }
     }
 
+    private var continuationPrompt: some View {
+        ZStack {
+            Color.black.opacity(0.55).ignoresSafeArea()
+            VStack(spacing: 20) {
+                Text("\(session.totalCount) reviewed")
+                    .font(.system(size: 28, weight: .black, design: .rounded))
+                Text("Keep going, or wrap up and review your Trims?")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                HStack(spacing: 12) {
+                    Button("Wrap up") { session.finishContinuation() }
+                        .controlSize(.large)
+                    Button("Keep going") { onRequestMore() }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                }
+            }
+            .padding(32)
+            .background(Color(nsColor: .windowBackgroundColor))
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .shadow(radius: 30)
+            .padding(40)
+        }
+    }
+
     private var lastPhotoBanner: some View {
         VStack {
             HStack {
@@ -175,6 +208,8 @@ struct TriageView: View {
                 // Let Space/Escape through to the FullScreenOverlay
                 return event
             }
+            // No decisions while the continuation boundary prompt is showing
+            if self.session.pendingContinuation { return event }
             switch event.keyCode {
             case 124: self.pendingDecision = .keep;  return nil   // →
             case 123: self.pendingDecision = .trim;  return nil   // ←

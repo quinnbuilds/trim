@@ -6,6 +6,7 @@ struct SessionSetupView: View {
     let hasSavedState: Bool
     let hasPhotos: Bool
     let libraryIsEmpty: Bool
+    let libraryExhausted: Bool
     let onStart: (SessionMode) -> Void
 
     // Month & year picker state
@@ -43,6 +44,11 @@ struct SessionSetupView: View {
             if libraryIsEmpty {
                 emptyLibraryView
             } else {
+                if libraryExhausted {
+                    terminalBanner
+                        .padding(.horizontal, 32)
+                        .padding(.bottom, 8)
+                }
                 sessionModes
             }
 
@@ -76,6 +82,27 @@ struct SessionSetupView: View {
         }
     }
 
+    // MARK: - Terminal state (library tail fully triaged)
+
+    private var terminalBanner: some View {
+        HStack(spacing: 12) {
+            Text("🎉")
+                .font(.system(size: 24))
+            VStack(alignment: .leading, spacing: 2) {
+                Text("End of the road")
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                Text("You've reached the oldest photo in your library. Looking trim.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity)
+        .background(Color.green.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
     // MARK: - Session modes
 
     private var sessionModes: some View {
@@ -88,6 +115,16 @@ struct SessionSetupView: View {
                     iconName: "arrow.clockwise",
                     color: .blue
                 ) { onStart(.pickUpWhereILeftOff) }
+            }
+
+            // Continue trimming (only after a completed session, while the library tail remains)
+            if settings.continueFromDate != nil {
+                modeCard(
+                    title: "Continue trimming",
+                    subtitle: "Keep going from where your last session ended",
+                    iconName: "forward.end",
+                    color: .green
+                ) { onStart(.continueTrimming) }
             }
 
             // Last night wasn't a movie (only if qualifying photos exist)

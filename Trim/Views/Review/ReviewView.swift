@@ -4,6 +4,7 @@ import AppKit
 
 struct ReviewView: View {
     let session: TriageSession
+    let photoService: PhotoLibraryService
     let onComplete: (DeletionResult?) -> Void
     let onCancel: () -> Void
 
@@ -77,6 +78,24 @@ struct ReviewView: View {
             Button("OK") { deletionError = nil }
         } message: {
             Text(deletionError ?? "")
+        }
+        .onAppear { loadTrimSizes() }
+    }
+
+    /// Populate real byte sizes for the Trim set so the storage-freed metric is accurate.
+    private func loadTrimSizes() {
+        let pending = session.itemsToTrim.filter { $0.fileSize == nil }
+        guard !pending.isEmpty else { return }
+        let service = photoService
+        Task.detached(priority: .userInitiated) {
+            let sizes = service.fileSizes(for: pending)
+            await MainActor.run {
+                for (id, bytes) in sizes {
+                    if let idx = session.items.firstIndex(where: { $0.id == id }) {
+                        session.items[idx].fileSize = bytes
+                    }
+                }
+            }
         }
     }
 

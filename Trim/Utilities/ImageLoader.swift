@@ -25,11 +25,11 @@ class ImageLoader {
             targetSize: targetSize,
             contentMode: contentMode,
             options: options
-        ) { image, info in
-            let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
+        ) { image, _ in
+            // .opportunistic delivers progressively — a fast low-res image first,
+            // then the full-quality one. Apply every update so the card sharpens in place.
             DispatchQueue.main.async {
                 completion(image)
-                _ = isDegraded  // accept progressive updates
             }
         }
     }

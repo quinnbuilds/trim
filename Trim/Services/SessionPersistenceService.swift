@@ -79,22 +79,32 @@ class SessionPersistenceService {
             }
         }
 
+        // Preserve the session's original mode so a re-save (e.g. backing out again)
+        // doesn't collapse every resumed session into pickUpWhereILeftOff.
         let mode = SessionMode.deserialise(record.sessionModeRaw) ?? .pickUpWhereILeftOff
         let session = TriageSession(
-            items: items, mode: .pickUpWhereILeftOff, maxUndoSteps: settings.undoSteps)
+            items: items, mode: mode, maxUndoSteps: settings.undoSteps)
 
         // Restore position (clamped to valid range)
         session.currentIndex = min(record.currentIndex, items.count)
         session.laterQueue = record.laterQueue.filter { $0 < items.count }
         session.laterPosition = min(record.laterPosition, session.laterQueue.count)
-        _ = mode // suppress unused warning
 
         // Re-derive phase
         if session.currentIndex >= items.count {
-            if session.laterQueue.isEmpty {
-                // Session was complete — shouldn't normally be saved in this state
-            } else {
+            if !session.laterQueue.isEmpty {
                 session.phase = .laterReview
+            }
+            // else: session was complete — shouldn't normally be saved in this state
+        } else {
+            // Backed out mid-main: surface unresolved Later items first, then resume the
+            // main queue at the saved position (PRODUCT.md — Pick up where I left off).
+            let laterIndices = items.indices.filter { items[$0].decision == .later }
+            if !laterIndices.isEmpty {
+                session.laterQueue = Array(laterIndices)
+                session.laterPosition = 0
+                session.phase = .laterReview
+                session.resumeMainIndexAfterLater = session.currentIndex
             }
         }
 
