@@ -190,28 +190,6 @@ class PhotoLibraryService: NSObject, PHPhotoLibraryChangeObserver {
         return sizes
     }
 
-    // Fetch file sizes for items (called on Review screen for storage estimate)
-    func fetchFileSizes(for items: [AssetItem], completion: @escaping ([String: Int64]) -> Void) {
-        let assets = items.map(\.asset)
-        var sizes: [String: Int64] = [:]
-        let group = DispatchGroup()
-
-        for asset in assets {
-            group.enter()
-            let opts = PHContentEditingInputRequestOptions()
-            opts.isNetworkAccessAllowed = false
-            asset.requestContentEditingInput(with: opts) { input, _ in
-                if let url = input?.fullSizeImageURL {
-                    let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int64) ?? 0
-                    sizes[asset.localIdentifier] = size
-                }
-                group.leave()
-            }
-        }
-
-        group.notify(queue: .main) { completion(sizes) }
-    }
-
     // Restore session from persisted identifiers
     func fetchAssets(for identifiers: [String]) -> [PHAsset] {
         let result = PHAsset.fetchAssets(withLocalIdentifiers: identifiers, options: nil)
