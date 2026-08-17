@@ -20,6 +20,7 @@ struct ContentView: View {
     @State private var externalDeletionIDs: [String] = []
     @State private var showExternalDeletionPrompt = false
     @State private var libraryExhausted = false
+    @State private var isLoadingMore = false
 
     var body: some View {
         Group {
@@ -196,7 +197,12 @@ struct ContentView: View {
     // MARK: - "I'm feeling lucky" continuation
 
     private func requestMorePhotos() {
+        // The prompt stays on screen until the fetch returns, so without this guard a second
+        // click starts a second fetch from the same anchor and appends the batch twice —
+        // duplicate ids then break the id-based lookups in ReviewView.
+        guard !isLoadingMore else { return }
         guard let session = session, let date = session.oldestLoadedDate else { return }
+        isLoadingMore = true
         let service = photoService
         let capturedSettings = settings
         let cap = settings.sessionLength.cap ?? 0
@@ -209,6 +215,7 @@ struct ContentView: View {
                     newItems,
                     canRequestMore: more,
                     oldestDate: newItems.last?.asset.creationDate ?? date)
+                isLoadingMore = false
             }
         }
     }
@@ -280,6 +287,13 @@ struct ContentView: View {
             items: newItems, mode: old.sessionMode, maxUndoSteps: old.maxUndoSteps)
         newSession.canRequestMore = old.canRequestMore
         newSession.oldestLoadedDate = old.oldestLoadedDate
+        // A resumed session reviews its Later items first, then jumps back into the main queue.
+        // Dropping this anchor sends the Later pass straight to .complete, silently pushing every
+        // un-reviewed main-queue photo into Review as undecided. Translate it past the drops.
+        if let resume = old.resumeMainIndexAfterLater {
+            let translated = old.items.prefix(resume).filter { !drop.contains($0.id) }.count
+            newSession.resumeMainIndexAfterLater = translated < newItems.count ? translated : nil
+        }
         if old.phase == .laterReview {
             let laterIdx = newItems.indices.filter { newItems[$0].decision == .later }
             newSession.laterQueue = Array(laterIdx)
@@ -290,7 +304,15 @@ struct ContentView: View {
                   let idx = newItems.firstIndex(where: { $0.id == cid }) {
             newSession.currentIndex = idx
         } else {
-            newSession.currentIndex = min(old.currentIndex, newItems.count)
+            // The card on screen was itself deleted. Translate the old position by counting how
+            // many items ahead of it survived — a plain min() both re-presents already-decided
+            // photos and can land exactly on endIndex, stranding the session on a blank card.
+            let translated = old.items.prefix(old.currentIndex).filter { !drop.contains($0.id) }.count
+            if translated >= newItems.count {
+                newSession.exhaustMainQueue()
+            } else {
+                newSession.currentIndex = translated
+            }
         }
         session = newSession
     }
