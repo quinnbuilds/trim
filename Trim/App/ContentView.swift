@@ -42,6 +42,9 @@ struct ContentView: View {
                         }
                     }
                 }
+                // Reading authorizationStatus here makes body re-render when permission
+                // resolves; the changed id rebuilds Setup so it re-reads the now-visible library.
+                .id(photoService.authorizationStatus)
 
             case .triage:
                 if let session = session {

@@ -116,7 +116,9 @@ struct FullScreenOverlay: View {
                     return
                 }
                 let playerItem = AVPlayerItem(asset: avAsset)
-                avPlayer = AVPlayer(playerItem: playerItem)
+                let player = AVPlayer(playerItem: playerItem)
+                player.play()   // autoplay once the asset is ready / downloaded
+                avPlayer = player
             }
         }
         videoRequestID = reqID
