@@ -208,6 +208,15 @@ class TriageSession {
         currentIndex = startIndex
     }
 
+    /// The main queue ran out without a decision being made — e.g. the card on screen was
+    /// deleted in Photos.app and the rebuild left nothing after it. Move on exactly as if
+    /// the user had just decided the final item.
+    func exhaustMainQueue() {
+        phase = .main
+        currentIndex = items.count
+        transitionAfterMain()
+    }
+
     /// Wrap up without loading more — proceed to Later Review / completion as normal.
     func finishContinuation() {
         pendingContinuation = false
